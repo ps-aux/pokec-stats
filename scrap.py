@@ -2,6 +2,9 @@ import urllib2
 import sys
 import bs4
 import re
+from stats import GenderStats
+from stats import RegionStats
+import stats
 
 user_name = sys.argv[1]
 password =  sys.argv[2]
@@ -119,23 +122,32 @@ def count_users (args, session_id):
 
 def go():
     session_id = login(user_name, password)
-    
-    region = 'BA'
     min_age = 14
     max_age = 70
-    age_diff = 0
-
-    genders = {'male': 0, 'female': 1}
-
-    for k in genders:
-        gender = genders[k]
-
-        count = 0
-        for age in range(min_age, max_age + 2, 1 + age_diff): 
-            params = (gender, regions[region], age, age + age_diff)
-            count = count +  count_users(params, session_id)
     
-        print "Total " + k  + " : " + str(count) 
+    all_stats = []
+    for region in regions:
+        print "Starting getting stats for " + region
+        stats = RegionStats(region)
+    
+        for age in range(min_age, max_age + 1): 
+            
+            #Males
+            params = (0, regions[region], age, age)
+            male_count = count_users(params, session_id)
+        
+            #Females
+            params = (1, regions[region], age, age)
+            female_count = count_users(params, session_id)
+            stats.add_gender_stats(GenderStats(age, male_count, female_count))
+        all_stats.append(region)
 
+        
+    report = stats.create_report(all_stats, min_age, max_age)
+    print report
+    of = open("/home/arkonix/tmp/scrap.csv","w")
+    print >>of, report
+        
+        
 
 go()
